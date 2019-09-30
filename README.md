@@ -6,4 +6,4 @@ Working on it
 
 - Heston model
 
-![Heston](https://octodex.github.com/chenlh96/Momentum-strategy-based-on-L_1-filter/figures/heston.png)
+![Heston](https://github.com/chenlh96/Momentum-strategy-based-on-L_1-filter/figures/heston.png)
