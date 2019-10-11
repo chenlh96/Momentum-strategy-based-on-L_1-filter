@@ -7,71 +7,18 @@ source('analysis.R')
 ##############################
 ##### input data
 
-# library(xts)
-# 
-# trades.raw = read.csv('data\\trades.csv', stringsAsFactors = FALSE)
-# trades.raw$cond = as.factor(trades.raw$cond)
-# levels(trades.raw$cond)
-# # trades.raw = trades.raw[,1:(ncol(trades.raw) - 4)]
-# trades.raw$datetime = as.POSIXlt(paste(trades.raw$date, trades.raw$time, sep = ' '), format = '%Y-%m-%d %H:%M:%OS')
-# stock.sym = names(table(trades.raw$sym))
-# stock.raw = lapply(stock.sym, function (x) trades.raw[trades.raw$sym == x,])
-# names(stock.raw) <- stock.sym
-# 
-# stock = lapply(stock.raw, function (x) as.xts(x[,c('price', 'size')], x$datetime))
-
 tick =getData('data\\trades.csv')
-
-##############################
-##### select data from special period to test the performance of l1tf
-library(ggplot2)
-
-## 0005.HK
-head(tick[['0005.HK']])
-plot(tick[['0005.HK']]$price)
-
-stock = tick[['0005.HK']]['2019-09-04 14:00/2019-09-04 14:30']$price
-nrow(stock)
-plot(stock)
-trend.l1 = l1tf(stock, lambda = 4000)
-plot(as.vector(stock), type = 'l', col='blue')
-lines(trend.l1, col = "red", type='l')
-
-stock = tick[['0005.HK']]['2019-09-05 10:00/2019-09-05 11:00']$price
-nrow(stock)
-plot(stock)     
-trend.l1c = l1tf.diff1(stock, lambda = 2000)
-ggplot(fortify(cbind(stock, trend.l1c), melt = TRUE), aes(x=Index, y=Value, col=Series)) + geom_line()
-
-## 0700.HK
-head(tick[['0700.HK']])
-plot(tick[['0700.HK']]$price)
-
-stock = tick[['0700.HK']]['2019-09-04 14:00/2019-09-04 14:10']$price
-nrow(stock)
-plot(stock)
-trend.l1 = l1tf(stock, lambda = 5000)
-plot(as.vector(stock), type = 'l', col='blue')
-lines(trend.l1, col = "red", type='l')
-
-stock = tick[['0700.HK']]['2019-09-05 13:30/2019-09-05 14:00']$price
-nrow(stock)
-plot(stock)
-trend.mix = l1tf.mix(stock, lambda1 = 200, lambda2 = 500)
-plot(as.vector(stock), type = 'l', col='blue')
-lines(trend.mix, col = "red", type='l')
-
-
-##############################
-##### test sp500: figure 7
 
 library(quantmod)
 
 getSymbols('^GSPC', from = '2007-01-01', to = '2011-06-30')
 head(GSPC)
 nrow(GSPC)
-sp500 = GSPC$GSPC.Adjusted
-plot(log(sp500))
+sp500 = log(GSPC$GSPC.Adjusted)
+plot(sp500)
+
+##############################
+##### test sp500: figure 7
 
 n.period = 2
 obs.time = 1:1008
@@ -82,11 +29,11 @@ D2 = getD(n.obs, 2)
 lamb.max = apply(sp500.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
 mean(lamb.max)
 
-plot(l1tf.diff1(log(sp500[obs.time]), mean(lamb.max), diff=2), type = 'l')
+plot(l1tf.diff1(sp500[obs.time], mean(lamb.max), k=2), type = 'l')
 
 ## figure 10
-hist.data = log(unclass(sp500[obs.time]))
-fut.data = log(unclass(sp500[fut.time]))
+hist.data = sp500[obs.time]
+fut.data = sp500[fut.time]
 sp500[fut.time]
 unclass(sp500)[fut.time[50]] / unclass(sp500)[fut.time[1]] - 1 # simple return
 fut.data[50] - fut.data[1] # log return
@@ -107,7 +54,7 @@ plot(hist.trend.sp500, type = 'l')
 
 ## apply the optimal lambda1 and lambda2 for L1-TC filter
 
-trend.sp500 = cv.fit.litf.mix(hist.data, fut.data, 400, 50, 12,15, 2)
+trend.sp500 = cv.fit.l1tf.mix(hist.data, fut.data, 400, 50, 12,15, 2)
 simple.summary.tf(trend.sp500)
 hist.trend.sp500 = l1tf.mix(hist.data, trend.sp500$best.lambda1, trend.sp500$best.lambda2, 2)
 plot(hist.trend.sp500, type = 'l')
@@ -118,3 +65,30 @@ trend.sp500 = fit.hptf(hist.data, fut.data, 400, 50)
 simple.summary.tf(trend.sp500)
 hist.trend.sp500 = hptf(hist.data, trend.sp500$best.lambda)
 plot(hist.trend.sp500, type = 'l')
+
+
+##############################
+##### select data from special period to test the performance of l1tf
+## 0005.HK
+head(tick[['0005.HK']])
+plot(tick[['0005.HK']]$price)
+
+stock = tick[['0005.HK']]['2019-09-04 14:00/2019-09-04 14:30']$price
+nrow(stock)
+plot(stock)
+trend.l1 = cv.fit.l1tf(stock, NA, 400, 100, 12, 15)
+trend.l1 = l1tf(stock, trend.l1$best.lambda)
+plot(as.vector(stock), type = 'l', col='blue')
+lines(trend.l1, col = "red", type='l')
+
+## 0700.HK
+head(tick[['0700.HK']])
+plot(tick[['0700.HK']]$price)
+
+stock = tick[['0700.HK']]['2019-09-05 13:30/2019-09-05 14:00']$price
+nrow(stock)
+plot(stock)
+trend.mix = cv.fit.l1tf.mix(stock, NA, 400, 100, 12, 15)
+trend.mix = l1tf.mix(stock, trend.mix$best.lambda1, trend.mix$best.lambda2)
+plot(as.vector(stock), type = 'l', col='blue')
+lines(trend.mix, col = "red", type='l')

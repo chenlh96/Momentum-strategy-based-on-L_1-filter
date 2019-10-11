@@ -8,7 +8,7 @@ L-1 filter is a special trend filter that has important application in different
 
 ## Simulation
 
-We use two classic stochatic process that is used most in the assumption of log-price process to run the simulation, in order to test the performance of the L_1 filter: Geometric brownian motion and Heston model. HP filter, L_1 filter with penalty of L_1 norm of 1st and 2nd order of difference and their mixed penalty are tested in sumulation
+We use two classic stochatic process that is used most in the assumption of log-price process to run the simulation, in order to test the performance of the L_1 filter: Geometric brownian motion and Heston model. HP filter, L_1 filter and its multiple variants are examined in sumulation.
 
 - Geometric brownian motion
 
@@ -20,7 +20,7 @@ We use two classic stochatic process that is used most in the assumption of log-
 
 ## Empirical study
 
-We use the tick data of stock in HKEX to evaluation whether the L_1 filter can obtain a clear trend in tick level data:
+We use the tick data of stock in HKEX to evaluation whether the L_1 filter can obtain a clear trend in tick level data. We use the cross valiation algorithm to choose the best lambda automatically.
 
 - 0005.HK, 2019-09-04 from 14:00 to 14:30, for L_1-T filter
 

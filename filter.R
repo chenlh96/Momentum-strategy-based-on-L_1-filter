@@ -69,7 +69,13 @@ l1tf.sparse <- function(x, lambda1, lambda2, k=1) {
 ##############################
 ##### Implement cv procedure for the l1 filter
 ##### the cv function
-cv.fit.l1tf <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff = 2) {
+cv.fit.l1tf <- function(x.hist, x.fut=NA, T1, T2, n.roll, n.lambda, diff = 2) {
+  if (!(all(class(x.hist) %in% c('numeric', 'matrix')))) {
+    x.hist = as.vector(x.hist)
+  } 
+  if (!(all(class(x.fut) %in% c('numeric', 'matrix')) | all(is.na(x.fut)))) {
+    x.fut = as.vector(x.fut)
+  }
   len.x = length(x.hist)
   Tg = ifelse(length(T2) == 1, T2, max(T2))
   Tl = ifelse(length(T2) == 1, NA, min(T2))
@@ -156,11 +162,11 @@ getD <- function(n, diff) {
 
 ##### for other types of trend filter
 ##### mix l1 filter
-cv.fit.litf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff=1) {
+cv.fit.l1tf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1=1, k2) {
   # compute lambda 1 and 2 saperately
-  cv.result1 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff)
+  cv.result1 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1)
   opt.lamb1 = cv.result1$best.lambda
-  cv.result2 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff + 1)
+  cv.result2 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, k2)
   opt.lamb2 = cv.result2$best.lambda
   
   len.x = length(x.hist)
@@ -168,9 +174,7 @@ cv.fit.litf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff=1) {
   te.v = x.fut[1:T2]
   tr.v = x.hist[(len.x - T1 + 1):len.x]
   
-  print('s')
   tr.trd = l1tf.mix(tr.v, opt.lamb1, opt.lamb2, diff)
-  print('e')
   pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
   pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
   
