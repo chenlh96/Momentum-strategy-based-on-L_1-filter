@@ -1,36 +1,36 @@
+library(quadprog)
+library(CVXR)
+library(l1tf)
+
 ##############################
 ##### define trend filter
 ##### function: hp filtering
 hptf <- function(x, lambda, diff=2) {
   n.obs = length(x)
-  if (diff == 2) {
-    D.hp = diag(-2, n.obs)
-    D.hp[abs(row(D.hp) - col(D.hp)) == 1] = 1
-    D.hp = D.hp[2:(n.obs - 1),]
-  }  else if (diff == 1) {
-    D.hp = diag(-1, n.obs)
-    D.hp[col(D.hp) - row(D.hp) == 1] = 1
-    D.hp = D.hp[1:(n.obs - 1),]
-  }
-  
+  D.hp = getD(n.obs, diff)
   trend.hp = solve(diag(n.obs) + 2 * lambda * t(D.hp) %*% D.hp) %*% x
   trend.hp = trend.hp[,1]
   return(trend.hp)
 } 
 
+##### ma filter
+
+matf <- function(x, T) {
+  ma.x = sapply((T + 1):length(x), function (t) mean(x[(t - T):(t - 1)]))
+  ma.x = c(rep(NA, T), ma.x)
+  return(ma.x)
+}
+
 ##### function: l1 filtering with first difference of ts
-l1tf.diff1 <- function(x, lambda) {
+l1tf.diff1 <- function(x, lambda, k= 1) {
   n.obs = length(x)
   
-  library(quadprog)
-  D = diag(-1, n.obs)
-  D[col(D) - row(D) == 1] = 1
-  D = D[1:(n.obs - 1),]
+  D =getD(n.obs, k)
   Dmat = D %*% t(D)
   dvec = matrix(x, nrow = 1) %*% t(D)
   dvec = dvec[1,]
-  Amat = t(rbind(diag(n.obs - 1), diag(-1, n.obs - 1)))
-  bvec = rep(-lambda, 2 * (n.obs - 1))
+  Amat = t(rbind(diag(n.obs - k), diag(-1, n.obs - k)))
+  bvec = rep(-lambda, 2 * (n.obs - k))
   
   solu = solve.QP(Dmat, dvec, Amat, bvec)
   v = solu[['solution']]
@@ -38,39 +38,29 @@ l1tf.diff1 <- function(x, lambda) {
   return(trend[,1])
 }
 
-l1tf.mix <- function(x, lambda1, lambda2) {
+l1tf.mix <- function(x, lambda1, lambda2, k1=1, k2=2) {
+  if (length(class(x)) > 1) {
+    x = unclass(x)
+  }
   n.obs = length(x)
   
-  # D11 = diag(-1, n.obs)
-  # D11[col(D11) - row(D11) == 1] = 1
-  # D1 = D11[1:(n.obs - 1),]
-  # D2 = D1 %*% D11
-  # D2 = D2[1:(n.obs - 2),]
-  # D = rbind(D1, D2)
-  # Dmat = D %*% t(D)
-  # dvec = matrix(x, nrow = 1) %*% t(D)
-  # Amat = rbind(diag(2 * n.obs - 3), diag(-1,2 * n.obs - 3))
-  # bvec = c(rep(-lambda1, n.obs - 1), rep(-lambda2, n.obs - 2))
-  # bvec = rep(bvec, 2)
-  
-  library(CVXR)
-  # v = Variable(2 * n.obs - 3)
-  # obj.tf = 0.5 * quad_form(v, Dmat) - dvec %*% v
-  # constrt = list(Amat %*% v >= bvec)
-  # p.tf = Problem(Minimize(obj.tf), constrt)
-  # v = solve(p.tf)$getValue(v)
-  # trend = x - t(D) %*% v
-  # return(trend)
+  trend = Variable(n.obs)
+  obj.tf = 0.5 * sum_squares(x - trend) + lambda1 * p_norm(diff(trend, differences=k1), 1) + lambda2 * p_norm(diff(trend, differences=k2), 1)
+  p.tf = Problem(Minimize(obj.tf))
+  trend = solve(p.tf)$getValue(trend)
+  return(trend)
+}
+
+##### A new trend filter called sparse l1 filter that is porposed in Tibshirani (2014)
+
+l1tf.sparse <- function(x, lambda1, lambda2, k=1) {
+  if (length(class(x)) > 1) {
+    x = unclass(x)
+  }
+  n.obs = length(x)
   
   trend = Variable(n.obs)
-  if (lambda1 != 0 & lambda2 != 0) {
-    obj.tf = 0.5 * sum_squares(x - trend) + lambda1 * tv(trend) + lambda2 * p_norm(diff(trend, differences=2), 1)
-  } else if (lambda1 == 0 & lambda2 != 0) {
-    obj.tf = 0.5 * sum_squares(x - trend) + lambda2 * p_norm(diff(trend, differences=2), 1)
-  } else if (lambda1 != 0 & lambda2 == 0) {
-    obj.tf = 0.5 * sum_squares(x - trend) + lambda1 * tv(trend)
-  }
-  
+  obj.tf = 0.5 * sum_squares(x - trend) + lambda1 * p_norm(diff(trend, differences=k), 1) + lambda2 * p_norm(trend, 1)
   p.tf = Problem(Minimize(obj.tf))
   trend = solve(p.tf)$getValue(trend)
   return(trend)
@@ -79,60 +69,145 @@ l1tf.mix <- function(x, lambda1, lambda2) {
 ##############################
 ##### Implement cv procedure for the l1 filter
 ##### the cv function
-cv.l1tf <- function(x, T1, T2, n.roll, n.lambda, diff = 2) {
-  len.x = length(x)
-  Tg = ifelse(length(T2) == 1, T2, T2[1])
-  Tl = ifelse(length(T2) == 1, 0, T2[2])
+cv.fit.l1tf <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff = 2) {
+  len.x = length(x.hist)
+  Tg = ifelse(length(T2) == 1, T2, max(T2))
+  Tl = ifelse(length(T2) == 1, NA, min(T2))
   len.cv = n.roll * Tg
-  cv.i = (1:len.x)[(len.x - len.cv + 1 - Tg):(len.x - Tg)]
+  cv.i = (1:len.x)[(len.x - len.cv + 1):len.x]
   
   cv.i.sp = matrix(cv.i, ncol = n.roll)
-  cv.x = apply(cv.i.sp, 2, function (i) x[i])
-  tr.x = apply(cv.i.sp, 2, function (i) x[(i[1] - T1):(i[1] - 1)])
-  te.x = x[-Tg]
-  tr.trend = cv.l1tf.run(tr.x, cv.x, te.x, T1, Tg, n.roll, n.lambda, diff)
+  cv.x = apply(cv.i.sp, 2, function (i) x.hist[i])
+  tr.x = apply(cv.i.sp, 2, function (i) x.hist[(i[1] - T1):(i[1] - 1)])
+  te.v = x.fut[1:Tg]
+  tr.v = x.hist[(len.x - T1 + 1):len.x]
+  # la.x = matrix(x.hist[1:(floor(nrow(x.hist)/n.roll)*n.roll)], ncol = n.roll)
   
-  if (Tl != 0 & Tg > Tl) {
-    cv.xl = apply(cv.i.sp, 2, function (i) x[i[1]:(i[1] + Tl)])
-    te.xl = x[-Tl]
-    tr.trend = cv.l1tf.run(tr.x, cv.xl, te.xl, T1, Tl, n.roll, n.lambda, diff)
+  cv.result = cv.fit.l1tf.run(tr.x, cv.x, tr.v, te.v, T1, Tg, n.roll, n.lambda, diff)
+  cv.result[['T2']] = Tg
+  
+  if (!is.na(Tl)) {
+    cv.xl = apply(cv.i.sp, 2, function (i) x.hist[i[1]:(i[1] + Tl - 1)])
+    te.v = x.fut[1:Tl]
+    cv.result.lc = cv.fit.l1tf.run(tr.x, cv.xl,tr.v, te.v, T1, Tl, n.roll, n.lambda, diff)
+    sd.glb = sd(cv.result$test.data - cv.result$predicted.trend)
+    if (any(abs(cv.result$test.data - cv.result$predicted.trend) > sd.glb)) {
+      cv.result = cv.result.lc
+      cv.result[['T2']] = Tl
+    }
   }
   
-  return(tr.trend)
+  return(cv.result)
 }
 
 ##### A core function for cv, can both handle the long and short term trend
-cv.l1tf.run <- function(tr.set, cv.set, te.set, T1, T2, n.roll, n.lambda, diff = 2) {
-  D11 = diag(-1, T2)
-  D11[col(D11) - row(D11) == 1] = 1
-  if (diff == 1) {
-    D = D11[1:(T2 - 1),]
-  } 
-  if (diff == 2) {
-    D1 = D11[1:(T2 - 1),]
-    D2 = D1 %*% D11
-    D = D2[1:(T2 - 2),]
-  }
-  cv.lamb = apply(cv.set, 2, function(x1) max(solve(D %*% t(D)) %*% D %*% x1))
-  lamb.bd = c(max(mean(cv.lamb) - 2 * sd(cv.lamb), 1), mean(cv.lamb) + 2 * sd(cv.lamb))
-  lambs = lamb.bd[1] * (lamb.bd[2] / lamb.bd[1])**(1:n.lambda/n.lambda)
+cv.fit.l1tf.run <- function(tr.set, cv.set, tr.vec, te.vec, T1, T2, n.roll, n.lambda, diff) {
+  D = getD(nrow(cv.set), diff)
+  cv.lamb = apply(cv.set, 2, function(x1) max(rowSums(abs(solve(D %*% t(D)) %*% D %*% x1))))
+  l.b = c(max(mean(cv.lamb) - 2 * sd(cv.lamb), 1e-1), mean(cv.lamb) + 2 * sd(cv.lamb))
+  lambs = l.b[1] * (l.b[2] / l.b[1])**(1:n.lambda/n.lambda)
   
   tr.trend = list()
   if (diff == 2) {
-    library(l1tf)
-    tr.trend = lapply(lambs, function (l) apply(tr.set, 2, function (x1) l1tf(x1, l)))
-  } else if (diff == 1) {
-    tr.trend = lapply(lambs, function (l) apply(tr.set, 2, function (x1) l1tf.diff1(x1, l)))
+    tf <- function(x, lambda) l1tf(x, lambda, diff)
+  } else if (diff == 1 | diff > 2) {
+    tf <- function(x, lambda) l1tf.diff1(x, lambda)
   }
+  tr.trend = lapply(lambs, function (l) apply(tr.set, 2, function (x1) tf(x1, l)))
   
-  i.prod = data.matrix(expand.grid(1:n.lambda, 1:n.roll))
-  err = matrix(0, n.lambda, n.roll)
-  for (i in (1:nrow(i.prod))) {
-    tr.trd = tr.trend[[i.prod[i, 1]]][,i.prod[i, 2]]
-    te.pri = te.set[i.prod[i, 2]]
-    
-    # compute predicted trend
+  predict.tf <- function (x1) {
+    pred = (1:T2) * (x1[T1] - x1[T1 - 1]) + x1[T1]
+    pred = ifelse(pred > 0, pred, 0)
+    return(pred)
   }
+
+  pr.trend = lapply(tr.trend, function (l) apply(l, 2, predict.tf))
+  err = sapply(pr.trend, function (l) colMeans((l - cv.set)^2))
+  err = colSums(err)
+  b.lamb = lambs[which.min(err)]
+  msg = sprintf('best lambda is: %.6f', b.lamb)
+  print(msg)
   
-  return(tr.trend)
+  tr.trd = tf(tr.vec, b.lamb)
+  pr.trd = predict.tf(tr.trd)
+  
+  result = list(lambda.max = cv.lamb, lambdas = lambs, err = err, best.lambda = b.lamb,
+                cv.train.data = tr.set, cv.test.data = cv.set, 
+                cv.train.trend = tr.trend, cv.predicted.trend = pr.trend,
+                train.data = tr.vec, test.data = te.vec, 
+                train.trend = tr.trd, predicted.trend = pr.trd)
+  
+  return(result)
+}
+
+##### auxillary function
+getD <- function(n, diff) {
+  D0 = diag(-1, n)
+  D0[col(D0) - row(D0) == 1] = 1
+  D = D0[1:(n - 1),]
+  if (diff > 1) {
+    for (i in 1:(diff - 1)) {
+      D = D %*% D0
+      D = D[1:(nrow(D) - 1),]
+    }
+  }
+  return(D)
+}
+
+##### for other types of trend filter
+##### mix l1 filter
+cv.fit.litf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff=1) {
+  # compute lambda 1 and 2 saperately
+  cv.result1 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff)
+  opt.lamb1 = cv.result1$best.lambda
+  cv.result2 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, diff + 1)
+  opt.lamb2 = cv.result2$best.lambda
+  
+  len.x = length(x.hist)
+  T2 = min(cv.result1[['T2']], cv.result2[['T2']])
+  te.v = x.fut[1:T2]
+  tr.v = x.hist[(len.x - T1 + 1):len.x]
+  
+  print('s')
+  tr.trd = l1tf.mix(tr.v, opt.lamb1, opt.lamb2, diff)
+  print('e')
+  pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
+  pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
+  
+  pred.result = list(best.lambda1 = opt.lamb1, best.lambda2 = opt.lamb2,
+                     train.data = tr.v, test.data = te.v,
+                     train.trend = tr.trd, predicted.trend = pr.trd)
+  return(pred.result)
+}
+
+##### hp filter
+fit.hptf <- function(x.hist, x.fut, T1, T2, diff = 2) {
+  len.x = length(x.hist)
+  te.v = x.fut[1:T2]
+  tr.v = x.hist[(len.x - T1 + 1):len.x]
+  b.lamb = (T2 / 2 / pi)^4 / 2 * 10.27
+  tr.trd = hptf(tr.v, b.lamb, diff)
+  
+  pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
+  pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
+  
+  pred.result = list(best.lambda = b.lamb,
+                     train.data = tr.v, test.data = te.v,
+                     train.trend = tr.trd, predicted.trend = pr.trd)
+  return(pred.result)
+}
+
+##### moving average filter
+fit.matf <- function(x.hist, x.fut, T.smo, T.pred) {
+  len.x = length(x.hist)
+  te.v = x.fut[1:T2]
+  tr.trd = matf(x.hist, T.smo)
+  
+  pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
+  pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
+  
+  pred.result = list(best.lambda = b.lamb,
+                     train.data = tr.v, test.data = te.v,
+                     train.trend = tr.trd, predicted.trend = pr.trd)
+  return(pred.result)
 }

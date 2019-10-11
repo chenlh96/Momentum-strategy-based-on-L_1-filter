@@ -1,10 +1,38 @@
 wd = 'D:\\Codes\\Code Repositories\\filter'
 setwd(wd)
 
-data.dir = 'data\\trades.csv'
-trade = read.csv(data.dir, stringsAsFactors = FALSE)
-trade$date = as.Date(trade$date)
-trade$time = strptime(trade$time, format = '%H:%M:%OS')
+source('filter.R')
+source('data.R')
+source('analysis.R')
 
-tmp = cv.l1tf(signal.nz, 400, 50, 12,15)
-for (i in 1:12) plot(tmp[[15]][,i], type = 'l')
+library(quantmod)
+
+##############################
+##### input data
+
+hk.stock =getData('data\\trades.csv')
+
+getSymbols('^GSPC', from = '1998-01-01', to = '2011-01-01')
+head(GSPC)
+nrow(GSPC)
+sp500 = GSPC$GSPC.Adjusted
+plot(log(sp500))
+date = index(sp500)
+
+getSymbols('DGS10', src = 'FRED')
+rf = DGS10[date] / 100
+which(is.na(rf))
+rf[which(is.na(rf))] = rf[which(is.na(rf)) - 1]
+plot(rf)
+
+##############################
+##### run backtest
+
+
+
+
+
+
+
+##############################
+##### analyze the performance

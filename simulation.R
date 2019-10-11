@@ -1,5 +1,6 @@
 wd = 'D:\\Codes\\Code Repositories\\filter'
 setwd(wd)
+source('filter.R')
 
 ##############################
 ##### simulation model
@@ -19,8 +20,6 @@ signal = cumsum(signal)
 signal.nz = signal + rnorm(n.obs, sd = sigma)
 
 # trend filtering via l1 filter and hp filter
-library(l1tf)
-
 lamb.l1 = 5200
 lamb.hp = 1500000
 
@@ -149,19 +148,21 @@ lamb.l1 = 200
 lamb.hp = 1200000
 # l1 filter
 trend.l1t = l1tf(price, lambda = lamb.l1)
-trend.l1c = l1tf.diff1(price, lambda = lamb.l1)
-trend.l1tc = l1tf.mix(price, lambda1 = lamb.l1, lambda2 = 500)
+trend.l1c = l1tf.diff1(price, lambda = lamb.l1 * 5, 3)
+trend.l1tc = l1tf.mix(price, lambda1 = lamb.l1, lambda2 = 500,2, 3)
+trend.l1sp = l1tf.sparse(price, lambda1 = 200, lambda2 = 200, 2)
 # hp filter
-trend.hp = hptf(price, lamb.hp, diff=2)
+# trend.hp = hptf(price, lamb.hp, diff=2)
 
 # plot
 par(mfrow=c(2,3))
 plot(price.lat, type = 'l', main = 'latent price')
 plot(price, type = 'l', main = 'price')
-plot(trend.hp, type = 'l', main = 'HP')
+# plot(trend.hp, type = 'l', main = 'HP')
 plot(trend.l1t, type = 'l', main = 'L1-T')
 plot(trend.l1c, type = 'l', main = 'L1-C')
 plot(trend.l1tc, type = 'l', main = 'L1-TC')
+plot(trend.l1sp, type = 'l', main = 'L1-sp')
 
 
 ##### 6. Heston model
@@ -191,19 +192,19 @@ price = exp(price.lat) + rnorm(n.obs)
 
 # trend filtering via l1 filter and hp filter
 lamb.l1 = 500
-lamb.hp = 120000
+lamb.hp = 1200000
 # l1 filter
 trend.l1t = l1tf(price, lambda = lamb.l1)
-trend.l1c = l1tf.diff1(price, lambda = lamb.l1)
+trend.l1c = l1tf.diff1(price, lambda = lamb.l1 + 200)
 trend.l1tc = l1tf.mix(price, lambda1 = lamb.l1 / 4, lambda2 = lamb.l1 * 2)
 # hp filter
 trend.hp = hptf(price, lamb.hp)
 
 # plot
-par(mfrow=c(2,3))
+par(mfrow=c(2,3)) 
 plot(price.lat, type = 'l', main = 'latent price')
 plot(price, type = 'l', main = 'price')
 plot(trend.hp, type = 'l', main = 'HP')
 plot(trend.l1t, type = 'l', main = 'L1-T')
-plot(trend.l1c, type = 'l', main = 'L1-C')
+plot(trend.l1c, main = 'L1-C')
 plot(trend.l1tc, type = 'l', main = 'L1-TC')
