@@ -54,7 +54,7 @@ plot(hist.trend.sp500, type = 'l')
 
 ## apply the optimal lambda1 and lambda2 for L1-TC filter
 
-trend.sp500 = cv.fit.l1tf.mix(hist.data, fut.data, 400, 50, 12,15, 2)
+trend.sp500 = cv.fit.l1tf.mix(hist.data, fut.data, 400, 50, 12,15)
 simple.summary.tf(trend.sp500)
 hist.trend.sp500 = l1tf.mix(hist.data, trend.sp500$best.lambda1, trend.sp500$best.lambda2, 2)
 plot(hist.trend.sp500, type = 'l')
@@ -71,7 +71,13 @@ plot(hist.trend.sp500, type = 'l')
 ##### select data from special period to test the performance of l1tf
 ## 0005.HK
 head(tick[['0005.HK']])
-plot(tick[['0005.HK']]$price)
+stock.day = split(tick[['0005.HK']], 'day')
+par(mfrow=c(2,1))
+for (i in 1:length(stock.day)){
+  if (nrow(stock.day[[i]]) > 2)
+    print(plot(stock.day[[i]]$price), main="")
+}
+  
 
 stock = tick[['0005.HK']]['2019-09-04 14:00/2019-09-04 14:30']$price
 nrow(stock)
@@ -83,7 +89,12 @@ lines(trend.l1, col = "red", type='l')
 
 ## 0700.HK
 head(tick[['0700.HK']])
-plot(tick[['0700.HK']]$price)
+stock.day = split(tick[['0700.HK']], 'day')
+par(mfrow=c(2,1))
+for (i in 1:length(stock.day)){
+  if (nrow(stock.day[[i]]) > 2)
+    print(plot(stock.day[[i]]$price), main="")
+}
 
 stock = tick[['0700.HK']]['2019-09-05 13:30/2019-09-05 14:00']$price
 nrow(stock)

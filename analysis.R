@@ -1,5 +1,5 @@
 simple.summary.tf <- function(trd.est, day=50, ylim=NA) {
-  
+  par(mfrow=c(2,2))
   if (!(is.null(trend.sp500$lambdas) & is.null(trend.sp500$err))) {
     plot(log(trend.sp500$lambdas), trend.sp500$err, type = 'l')
   }

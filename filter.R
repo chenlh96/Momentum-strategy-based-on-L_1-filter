@@ -162,7 +162,13 @@ getD <- function(n, diff) {
 
 ##### for other types of trend filter
 ##### mix l1 filter
-cv.fit.l1tf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1=1, k2) {
+cv.fit.l1tf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1=1, k2=2) {
+  if (!(all(class(x.hist) %in% c('numeric', 'matrix')))) {
+    x.hist = as.vector(x.hist)
+  } 
+  if (!(all(class(x.fut) %in% c('numeric', 'matrix')) | all(is.na(x.fut)))) {
+    x.fut = as.vector(x.fut)
+  }
   # compute lambda 1 and 2 saperately
   cv.result1 = cv.fit.l1tf(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1)
   opt.lamb1 = cv.result1$best.lambda
@@ -174,7 +180,7 @@ cv.fit.l1tf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1=1, k2) {
   te.v = x.fut[1:T2]
   tr.v = x.hist[(len.x - T1 + 1):len.x]
   
-  tr.trd = l1tf.mix(tr.v, opt.lamb1, opt.lamb2, diff)
+  tr.trd = l1tf.mix(tr.v, opt.lamb1, opt.lamb2, k1, k2)
   pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
   pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
   
@@ -186,6 +192,12 @@ cv.fit.l1tf.mix <- function(x.hist, x.fut, T1, T2, n.roll, n.lambda, k1=1, k2) {
 
 ##### hp filter
 fit.hptf <- function(x.hist, x.fut, T1, T2, diff = 2) {
+  if (!(all(class(x.hist) %in% c('numeric', 'matrix')))) {
+    x.hist = as.vector(x.hist)
+  } 
+  if (!(all(class(x.fut) %in% c('numeric', 'matrix')) | all(is.na(x.fut)))) {
+    x.fut = as.vector(x.fut)
+  }
   len.x = length(x.hist)
   te.v = x.fut[1:T2]
   tr.v = x.hist[(len.x - T1 + 1):len.x]
@@ -203,6 +215,12 @@ fit.hptf <- function(x.hist, x.fut, T1, T2, diff = 2) {
 
 ##### moving average filter
 fit.matf <- function(x.hist, x.fut, T.smo, T.pred) {
+  if (!(all(class(x.hist) %in% c('numeric', 'matrix')))) {
+    x.hist = as.vector(x.hist)
+  } 
+  if (!(all(class(x.fut) %in% c('numeric', 'matrix')) | all(is.na(x.fut)))) {
+    x.fut = as.vector(x.fut)
+  }
   len.x = length(x.hist)
   te.v = x.fut[1:T2]
   tr.trd = matf(x.hist, T.smo)
