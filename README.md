@@ -34,6 +34,20 @@ We use the tick data of stock in HKEX to evaluation whether the L_1 filter can o
 
 ![0007](https://github.com/chenlh96/Momentum-strategy-based-on-L_1-filter/raw/master/figures//0007_l1_mix.png)
 
+## Momentum strategy
+
+### S&P 500
+
+THe momentum strategy was built on L_1 filter, the preidction trend use linear extrapolation by the closet two estimation trend in training set. The testing period is 2000 to 2010, total 10 years. The results are
+
+Model | trend | Return | Volatility | Sharpe ratio | maxdrawdown
+ ---  | ---   | ------ | ---------- | ------------ | -----------
+L_2   |       | 0.017  | 0.015      | 1.12         | 0.082
+MA    |       | 0.017  | 0.015      | 1.13         | 0.082
+L_1T  | LT    | 0.017  | 0.015      | 1.12         | 0.082 
+L_1T  | GT    | 0.019  | 0.015      | 1.30         | 0.16
+L_1T  | LGT   | 0.017  | 0.015      | 1.12         | 0.082 
+
 ## Reference
 
 - T.L.Dao, 2014, [Momentum Strategies Based on L_1 Filter](https://arxiv.org/abs/1403.4069)

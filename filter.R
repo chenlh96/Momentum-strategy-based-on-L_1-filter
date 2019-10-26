@@ -40,7 +40,7 @@ l1tf.diff1 <- function(x, lambda, k= 1) {
 
 l1tf.mix <- function(x, lambda1, lambda2, k1=1, k2=2) {
   if (length(class(x)) > 1) {
-    x = unclass(x)
+    x = as.vector(x)
   }
   n.obs = length(x)
   
@@ -55,7 +55,7 @@ l1tf.mix <- function(x, lambda1, lambda2, k1=1, k2=2) {
 
 l1tf.sparse <- function(x, lambda1, lambda2, k=1) {
   if (length(class(x)) > 1) {
-    x = unclass(x)
+    x = as.vector(x)
   }
   n.obs = length(x)
   
@@ -91,13 +91,12 @@ cv.fit.l1tf <- function(x.hist, x.fut=NA, T1, T2, n.roll, n.lambda, diff = 2) {
   
   cv.result = cv.fit.l1tf.run(tr.x, cv.x, tr.v, te.v, T1, Tg, n.roll, n.lambda, diff)
   cv.result[['T2']] = Tg
-  
   if (!is.na(Tl)) {
     cv.xl = apply(cv.i.sp, 2, function (i) x.hist[i[1]:(i[1] + Tl - 1)])
     te.v = x.fut[1:Tl]
     cv.result.lc = cv.fit.l1tf.run(tr.x, cv.xl,tr.v, te.v, T1, Tl, n.roll, n.lambda, diff)
-    sd.glb = sd(cv.result$test.data - cv.result$predicted.trend)
-    if (any(abs(cv.result$test.data - cv.result$predicted.trend) > sd.glb)) {
+    sd.glo = sd(cv.result$train.data - cv.result$train.trend)
+    if (any(abs(cv.result$train.data - cv.result$train.trend) > sd.glo)) {
       cv.result = cv.result.lc
       cv.result[['T2']] = Tl
     }
@@ -131,8 +130,8 @@ cv.fit.l1tf.run <- function(tr.set, cv.set, tr.vec, te.vec, T1, T2, n.roll, n.la
   err = sapply(pr.trend, function (l) colMeans((l - cv.set)^2))
   err = colSums(err)
   b.lamb = lambs[which.min(err)]
-  msg = sprintf('best lambda is: %.6f', b.lamb)
-  print(msg)
+  # msg = sprintf('best lambda is: %.6f', b.lamb)
+  # print(msg)
   
   tr.trd = tf(tr.vec, b.lamb)
   pr.trd = predict.tf(tr.trd)
@@ -214,22 +213,21 @@ fit.hptf <- function(x.hist, x.fut, T1, T2, diff = 2) {
 }
 
 ##### moving average filter
-fit.matf <- function(x.hist, x.fut, T.smo, T.pred) {
+fit.matf <- function(x.hist, x.fut, T1, T2) {
   if (!(all(class(x.hist) %in% c('numeric', 'matrix')))) {
     x.hist = as.vector(x.hist)
   } 
   if (!(all(class(x.fut) %in% c('numeric', 'matrix')) | all(is.na(x.fut)))) {
     x.fut = as.vector(x.fut)
   }
-  len.x = length(x.hist)
+  # len.x = length(x.hist)
   te.v = x.fut[1:T2]
-  tr.trd = matf(x.hist, T.smo)
+  tr.trd = matf(x.hist, T1)
   
-  pr.trd = (1:T2) * (tr.trd[T1] - tr.trd[T1 - 1]) + tr.trd[T1]
+  pr.trd = (1:T2) * (tr.trd[length(x.hist)] - tr.trd[length(x.hist) - 1]) + tr.trd[length(x.hist)]
   pr.trd = ifelse(pr.trd > 0, pr.trd, 0)
   
-  pred.result = list(best.lambda = b.lamb,
-                     train.data = tr.v, test.data = te.v,
+  pred.result = list(train.data = x.hist, test.data = te.v,
                      train.trend = tr.trd, predicted.trend = pr.trd)
   return(pred.result)
 }
