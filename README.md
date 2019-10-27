@@ -48,6 +48,24 @@ L_1T  | LT    | 0.017  | 0.015      | 1.12         | 0.082
 L_1T  | GT    | 0.019  | 0.015      | 1.30         | 0.16
 L_1T  | LGT   | 0.017  | 0.015      | 1.12         | 0.082 
 
+### High frequency data
+
+We build a simple trading strategy by taking the following rules:
+
+1. use the previous 1 hour data as historical date (second half hour data as cross validation), to fit a L_1T filter and forecast the trend in next 5 minute
+2. consider the slope of the predicted trend
+  - if slope > 0, set position = 1
+  - if slope < 0, set position = -1
+
+The backtest environment is very simple, with a setting that not consider sllipage and transaction cost. Results are as follow:
+
+- profit per share
+
+Date | 0005.HK | 0700.HK
+ --- | ------- | -------
+2019-09-04 | 1.35 | -0.3
+2019-09-05 | -3.2 | 0.2
+
 ## Reference
 
 - T.L.Dao, 2014, [Momentum Strategies Based on L_1 Filter](https://arxiv.org/abs/1403.4069)

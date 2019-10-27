@@ -50,3 +50,8 @@ bt.stats = simple.summary.strat(bt.result)
 ##############################
 ##### analyze the performance
 
+##############################
+##### high frequency
+
+bt.result = backtest.high.freq(L1.high.freq.strat, hk.stock[['0700.HK']])
+bt.stats = hf.summary.strat(bt.result)
