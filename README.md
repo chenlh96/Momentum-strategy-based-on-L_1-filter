@@ -66,6 +66,13 @@ Date | 0005.HK | 0700.HK
 2019-09-04 | 1.35 | -0.3
 2019-09-05 | -3.2 | 0.2
 
+## Todo list
+
+1. fix bugs in decting trend (slope as trend, not prediction price)
+2. reduce volatility, by clustering some of the data?
+3. new data?
+4. equation in the email
+
 ## Reference
 
 - T.L.Dao, 2014, [Momentum Strategies Based on L_1 Filter](https://arxiv.org/abs/1403.4069)
