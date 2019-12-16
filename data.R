@@ -13,3 +13,10 @@ getData <- function(path, symbol=c('0005.HK', '0700.HK')) {
   stock = lapply(stock.raw, function (x) as.xts(x[,c('price', 'size')], x$datetime))
   return(stock)
 }
+
+aggregate.tick <- function(tickdata, k = 1, on = 'minutes') {
+  tick1min.list = lapply(split(tickdata, 'day'), function(x) aggregatets(x, k = k, on = on))
+  tick1min = tick1min.list[[1]]
+  for (i in 2:length(tick1min.list)) tick1min = c(tick1min, tick1min.list[[i]])
+  return(tick1min)
+}

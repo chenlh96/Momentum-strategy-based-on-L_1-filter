@@ -68,10 +68,8 @@ Date | 0005.HK | 0700.HK
 
 ## Todo list
 
-1. fix bugs in decting trend (slope as trend, not prediction price)
-2. reduce volatility, by clustering some of the data?
-3. new data?
-4. equation in the email
+2. the equation in email, exactly the same as the backtest problem I seek help from jiayang
+3. How to use it to detect the momentem in 1 min data
 
 ## Reference
 

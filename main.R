@@ -12,13 +12,14 @@ library(quantmod)
 ##############################
 ##### input data
 
-hk.stock =getData('data\\trades.csv')
+hk.stock =getData('data\\trades0700_1.csv', symbol='0700.HK')
+temp = aggregatets(hk.stock[['0700.HK']]$price)
 
 getSymbols('^GSPC', from = '1965-01-01', to = '2011-01-01')
 head(GSPC)
 nrow(GSPC)
 sp500 = GSPC$GSPC.Adjusted
-plot(log(sp500))
+plot(log(sp500['2008/']))
 date = index(sp500)
 
 getSymbols('DGS10', src = 'FRED')
@@ -27,11 +28,11 @@ which(is.na(rf))
 rf[which(is.na(rf))] = rf[which(is.na(rf)) - 1]
 plot(rf)
 
-as.numeric(head(sp500['2000-01-01/'], 1)) / as.numeric(tail(sp500, 1)) - 1
+as.numeric(tail(sp500, 1)) / as.numeric(head(sp500['2008-01-01/'], 1)) - 1
 # 
 ##############################
 ##### run backtest
-w0 = 100
+w0 = 10000
 bt.result = backtest(L1.momentum.strat.LT, '2000-01-01', '2011-01-01', sp500, rf, w0)
 bt.stats = simple.summary.strat(bt.result)
 

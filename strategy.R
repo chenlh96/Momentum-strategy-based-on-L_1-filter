@@ -8,16 +8,16 @@ L1.momentum.strat.LT <- function(data, w0, curr.vars=NULL) {
   T2 = 130
   mult = 4
   T1 = mult * T2
-  risk = 1e+5 / w0
-  return(L1.momentum.strat.gen(data, w0, T1, T2,risk.constrt = risk, curr.vars=curr.vars))
+  risk = 0.005
+  return(L1.momentum.strat.gen(log(data), w0, T1, T2,risk.constrt = risk, curr.vars=curr.vars))
 }
 
 L1.momentum.strat.GT <- function(data, w0, curr.vars=NULL) {
   T2 = 130 * 4
   mult = 4
   T1 = mult * T2
-  risk = 1e+5 / w0
-  return(L1.momentum.strat.gen(data, w0, T1, T2, risk.constrt = risk, curr.vars=curr.vars))
+  risk = 0.005
+  return(L1.momentum.strat.gen(log(data), w0, T1, T2, risk.constrt = risk, curr.vars=curr.vars))
 }
 
 L1.momentum.strat.LGT <- function(data, w0, curr.vars=NULL) {
@@ -25,8 +25,8 @@ L1.momentum.strat.LGT <- function(data, w0, curr.vars=NULL) {
   T2 = 130 * 4
   mult = 4
   T1 = mult * T2
-  risk = 1e+5 / w0
-  return(L1.momentum.strat.gen(data, w0, T1, c(T2, T3), risk.constrt = risk, curr.vars=curr.vars))
+  risk = 0.005
+  return(L1.momentum.strat.gen(log(data), w0, T1, c(T2, T3), risk.constrt = risk, curr.vars=curr.vars))
 }
 
 L1.momentum.strat.gen <- function(data, w0, T1, T2, n.roll=12, n.lambda=15, risk.constrt=1, curr.vars=NULL) {
@@ -39,7 +39,7 @@ L1.momentum.strat.gen <- function(data, w0, T1, T2, n.roll=12, n.lambda=15, risk
     curr.vars$pred.trend = trd.result$predicted.trend
     curr.vars$max.count = trd.result[['T2']]
   }
-  pred.mu = curr.vars$pred.trend[curr.vars$count]
+  pred.mu = curr.vars$pred.trend[2] - curr.vars$pred.trend[1]
   n.data = length(data)
   vol = mean(diff(log(as.vector(data[(n.data - curr.vars$max.count + 1 - 1):n.data])))^2)
   asset.alloc = pred.mu / (risk.constrt * w0 * vol)
@@ -51,7 +51,7 @@ L1.momentum.strat.gen <- function(data, w0, T1, T2, n.roll=12, n.lambda=15, risk
 MA.strat <- function(data, w0, curr.vars=NULL) {
   T1 = 130 * 4
   T2= 130
-  risk.constrt=1e+5 / w0
+  risk.constrt=0.005
   
   if (is.null(curr.vars)) {
     curr.vars = list(count=max(T2) + 1, pred.trend=NA, asset.alloc=NA, max.count=max(T2))
@@ -63,7 +63,7 @@ MA.strat <- function(data, w0, curr.vars=NULL) {
     curr.vars$pred.trend = trd.result$predicted.trend
   }
   
-  pred.mu = curr.vars$pred.trend[curr.vars$count]
+  pred.mu = curr.vars$pred.trend[2] - curr.vars$pred.trend[1]
   n.data = length(data)
   vol = mean(diff(log(as.vector(data[(n.data - T2 + 1 - 1):n.data])))^2)
   asset.alloc = pred.mu / (risk.constrt * w0 * vol)
@@ -75,7 +75,7 @@ MA.strat <- function(data, w0, curr.vars=NULL) {
 L2.strat <- function(data, w0, curr.vars=NULL) {
   T1 = 130 * 4
   T2 = 130
-  risk.constrt=1e+5 / w0
+  risk.constrt=0.005
   if (is.null(curr.vars)) {
     curr.vars = list(count=max(T2) + 1, pred.trend=NA, asset.alloc=NA, max.count=max(T2))
   }
@@ -86,7 +86,7 @@ L2.strat <- function(data, w0, curr.vars=NULL) {
     curr.vars$pred.trend = trd.result$predicted.trend
   }
   
-  pred.mu = curr.vars$pred.trend[curr.vars$count]
+  pred.mu = curr.vars$pred.trend[2] - curr.vars$pred.trend[1]
   n.data = length(data)
   vol = mean(diff(log(as.vector(data[(n.data - T2 + 1 - 1):n.data])))^2)
   asset.alloc = pred.mu / (risk.constrt * w0 * vol)

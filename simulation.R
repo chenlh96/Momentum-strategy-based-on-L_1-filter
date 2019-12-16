@@ -28,15 +28,14 @@ trend.l1 = l1tf(signal.nz, lambda = 5200)
 trend.l1.mix = l1tf.mix(signal.nz, lambda1 = lamb.l1, lambda2 = 5000)
 # hp filter
 trend.hp = hptf(signal.nz, lamb.hp)
-plot(trend.hp, type = 'l', main = 'HP')
 
 # plot
 par(mfrow=c(2,3))
-plot(signal, type = 'l', main = 'signal')
-plot(signal.nz, type = 'l', main = 'signal + noise')
-plot(trend.l1, type = 'l', main = 'L1-T')
-plot(trend.l1.mix, type = 'l', main = 'L1-CT')
-plot(trend.hp, type = 'l', main = 'HP')
+plot(signal, type = 'l', main = 'signal', col="red")
+plot(signal.nz, type = 'l', main = 'signal + noise', col="red")
+plot(trend.l1, type = 'l', main = 'L1-T', col="blue")
+plot(trend.l1.mix, type = 'l', main = 'L1-CT', col="blue")
+plot(trend.hp, type = 'l', main = 'HP', col="green")
 
 ##### 2. random walk
 p = 0.993
@@ -64,11 +63,11 @@ trend.hp = hptf(signal.nz, lamb.hp)
 
 # plot
 par(mfrow=c(2,3))
-plot(signal, type = 'l', main = 'signal')
-plot(signal.nz, type = 'l', main = 'signal + noise')
-plot(trend.l1, type = 'l', main = 'L1-T')
-plot(trend.l1.mix, type = 'l', main = 'L1-CT')
-plot(trend.hp, type = 'l', main = 'HP')
+plot(signal, type = 'l', main = 'signal', col="red")
+plot(signal.nz, type = 'l', main = 'signal + noise', col="red")
+plot(trend.l1, type = 'l', main = 'L1-T', col="blue")
+plot(trend.l1.mix, type = 'l', main = 'L1-CT', col="blue")
+plot(trend.hp, type = 'l', main = 'HP', col="green")
 
 ##### 3. step trend lines perturbed by a white nz process
 p = 0.998
@@ -84,7 +83,7 @@ signal.nz = signal + rnorm(n.obs, sd = sigma)
 
 # trend filtering via l1 filter and hp filter
 lamb.l1 = 100
-lamb.hp = 1200000
+lamb.hp = 12000
 
 # l1 filter
 trend.l1 = l1tf.diff1(signal.nz, lambda = lamb.l1)
@@ -93,10 +92,10 @@ trend.hp = hptf(signal.nz, lamb.hp, diff=1)
 
 # plot
 par(mfrow=c(2,2))
-plot(signal, type = 'l', main = 'signal')
-plot(signal.nz, type = 'l', main = 'signal + noise')
-plot(trend.l1, type = 'l', main = 'L1-C')
-plot(trend.hp, type = 'l', main = 'HP')
+plot(signal, type = 'l', main = 'signal', col="red")
+plot(signal.nz, type = 'l', main = 'signal + noise', col="red")
+plot(trend.l1, type = 'l', main = 'L1-C', col="blue")
+plot(trend.hp, type = 'l', main = 'HP', col="green")
 
 ##### 4. O-U process
 p = 0.9985
@@ -126,10 +125,10 @@ trend.hp = hptf(signal.nz, lamb.hp, diff=1)
 
 # plot
 par(mfrow=c(2,2))
-plot(signal, type = 'l', main = 'signal')
-plot(signal.nz, type = 'l', main = 'signal + noise')
-plot(trend.l1, type = 'l', main = 'L1-C')
-plot(trend.hp, type = 'l', main = 'HP')
+plot(signal, type = 'l', main = 'signal', col="red")
+plot(signal.nz, type = 'l', main = 'signal + noise', col="red")
+plot(trend.l1, type = 'l', main = 'L1-C', col="blue")
+plot(trend.hp, type = 'l', main = 'HP', col="green")
 
 ##### 5. GBM for price
 mu = 0.05
@@ -139,30 +138,29 @@ bm = rnorm(n.obs)
 price.lat = rep(0, n.obs)
 price.lat[1] = 40
 for (i in (2:n.obs)) {
-  price.lat[i] = price.lat[i - 1] + mu * dt + sigma * sqrt(dt) * bm[i]
+  price.lat[i] = price.lat[i - 1] * (1 + mu * dt + sigma * sqrt(dt) * bm[i])
 }
 price = price.lat + rnorm(n.obs)
 
 # trend filtering via l1 filter and hp filter
-lamb.l1 = 200
-lamb.hp = 1200000
+lamb.l1 = 2000
+lamb.hp = 12000
 # l1 filter
 trend.l1t = l1tf(price, lambda = lamb.l1)
-trend.l1c = l1tf.diff1(price, lambda = lamb.l1 * 5, 3)
-trend.l1tc = l1tf.mix(price, lambda1 = lamb.l1, lambda2 = 500,2, 3)
-trend.l1sp = l1tf.sparse(price, lambda1 = 200, lambda2 = 200, 2)
+trend.l1c = l1tf.diff1(price, lambda = lamb.l1 * 5)
+trend.l1tc = l1tf.mix(price, lambda1 = lamb.l1, lambda2 = 1000,1, 2)
+trend.l1sp = l1tf.sparse(price, lambda1 = 25000, lambda2 = 500, 2)
 # hp filter
 # trend.hp = hptf(price, lamb.hp, diff=2)
 
 # plot
 par(mfrow=c(2,3))
-plot(price.lat, type = 'l', main = 'latent price')
-plot(price, type = 'l', main = 'price')
+plot(price.lat, type = 'l', main = 'latent price', col="red")
+plot(price, type = 'l', main = 'price', col="red")
 # plot(trend.hp, type = 'l', main = 'HP')
-plot(trend.l1t, type = 'l', main = 'L1-T')
-plot(trend.l1c, type = 'l', main = 'L1-C')
-plot(trend.l1tc, type = 'l', main = 'L1-TC')
-plot(trend.l1sp, type = 'l', main = 'L1-sp')
+plot(trend.l1t, type = 'l', main = 'L1-T', col="blue")
+plot(trend.l1c, type = 'l', main = 'L1-C', col="blue")
+plot(trend.l1tc, type = 'l', main = 'L1-TC', col="blue")
 
 
 ##### 6. Heston model
@@ -186,13 +184,13 @@ vol.hest = rep(0, n.obs)
 for (i in (2:n.obs)) {
   prev.vol = max(vol.hest[i - 1], 0)
   vol.hest[i] = prev.vol + kappa * (alpha - prev.vol) * dt + xi * sqrt(prev.vol * dt) * bm.vol[i]
-  price.lat[i] = price.lat[i - 1] + (mu - prev.vol / 2) * dt + sqrt(prev.vol * dt) * bm.pri[i]
+  price.lat[i] = price.lat[i - 1] * (1 + (mu - prev.vol / 2) * dt + sqrt(prev.vol * dt) * bm.pri[i])
 }
 price = exp(price.lat) + rnorm(n.obs)
 
 # trend filtering via l1 filter and hp filter
 lamb.l1 = 500
-lamb.hp = 1200000
+lamb.hp = 12000
 # l1 filter
 trend.l1t = l1tf(price, lambda = lamb.l1)
 trend.l1c = l1tf.diff1(price, lambda = lamb.l1 + 200)
@@ -202,9 +200,8 @@ trend.hp = hptf(price, lamb.hp)
 
 # plot
 par(mfrow=c(2,3)) 
-plot(price.lat, type = 'l', main = 'latent price')
-plot(price, type = 'l', main = 'price')
-plot(trend.hp, type = 'l', main = 'HP')
-plot(trend.l1t, type = 'l', main = 'L1-T')
-plot(trend.l1c, main = 'L1-C')
-plot(trend.l1tc, type = 'l', main = 'L1-TC')
+plot(price.lat, type = 'l', main = 'latent price', col="red")
+plot(price, type = 'l', main = 'price', col="red")
+plot(trend.l1t, type = 'l', main = 'L1-T', col="blue")
+plot(trend.l1c, main = 'L1-C', type = 'l', col="blue")
+plot(trend.l1tc, type = 'l', main = 'L1-TC', col="blue")

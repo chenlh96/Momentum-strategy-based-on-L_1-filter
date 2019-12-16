@@ -9,6 +9,9 @@ source('analysis.R')
 
 tick =getData('data\\trades.csv')
 
+tick1 =getData('data\\trades0700_1.csv')
+tick1 = tick1[['0700.HK']]
+
 library(quantmod)
 
 getSymbols('^GSPC', from = '2007-01-01', to = '2011-06-30')
@@ -29,7 +32,13 @@ D2 = getD(n.obs, 2)
 lamb.max = apply(sp500.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
 mean(lamb.max)
 
-plot(l1tf.diff1(sp500[obs.time], mean(lamb.max), k=2), type = 'l')
+trend.l1t = l1tf.diff1(coredata(sp500[obs.time]), mean(lamb.max), k=2)
+trend.hp = hptf(coredata(sp500[obs.time]), (n.obs / 2 / pi)**4 / 2)
+
+par(mfrow=c(2,2))
+plot(coredata(sp500), main = 'sp500', type = 'l', col = 'red')
+plot(trend.l1t, main = 'l1t',  type = 'l', col = 'blue')
+plot(trend.hp,  main = 'HP', type = 'l', col = 'green')
 
 ## figure 10
 hist.data = sp500[obs.time]
@@ -103,3 +112,78 @@ trend.mix = cv.fit.l1tf.mix(stock, NA, 400, 100, 12, 15)
 trend.mix = l1tf.mix(stock, trend.mix$best.lambda1, trend.mix$best.lambda2)
 plot(as.vector(stock), type = 'l', col='blue')
 lines(trend.mix, col = "red", type='l')
+
+##############################
+##### stock: 0700.HK
+
+library(highfrequency)
+
+tick1min = aggregate.tick(tick1$price)
+
+test.date = c('2019-05-15','2019-06-03', '2019-08-01', '2019-10-25')
+par(mfrow=c(2,2))
+p = 6
+
+for (i in 1:4) {
+  test = log(coredata(tick1min[test.date[i]]))
+  test.sp = matrix(test[1:(floor(nrow(test)/p)*p)], ncol = p)
+  n.obs = nrow(test.sp)
+  D2 = getD(n.obs, 2)
+  lamb.max = apply(test.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
+  mean(lamb.max)
+  trend.l1t = l1tf.diff1(test, mean(lamb.max), k=2)
+  trend.hp = hptf(test, (length(test) / 2 / pi)**4 / 2)
+  plot(test, type = 'l', col = 'red', main = test.date[i], ylab = 'log price')
+  lines(trend.l1t, type ='l', col = 'blue')
+  lines(trend.hp, type ='l', col = 'green')
+#  legend('bottomright', legend = c('log price', 'trend'), col = c('black', 'red'))
+}
+
+tick5min = aggregate.tick(tick1$price, k = 5)
+
+for (i in 1:4) {
+  test = log(coredata(tick5min[test.date[i]]))
+  test.sp = matrix(test[1:(floor(nrow(test)/p)*p)], ncol = p)
+  n.obs = nrow(test.sp)
+  D2 = getD(n.obs, 2)
+  lamb.max = apply(test.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
+  mean(lamb.max)
+  trend.l1t = l1tf.diff1(test, mean(lamb.max), k=2)
+  trend.hp = hptf(test, (length(test) / 2 / pi)**4 / 2)
+  plot(test, type = 'l', col = 'red', main = test.date[i], ylab = 'log price')
+  lines(trend.l1t, type ='l', col = 'blue')
+  lines(trend.hp, type ='l', col = 'green')
+#  legend('bottomright', legend = c('log price', 'trend'), col = c('black', 'red'))
+}
+
+tick1sec = aggregate.tick(tick1$price, k = 1, on = 'seconds')
+
+for (i in 1:4) {
+  test = log(coredata(tick1sec[paste(paste(test.date[i], '10:00'), paste(test.date[i], '11:00'), sep = '/')]))
+  test.sp = matrix(test[1:(floor(nrow(test)/p)*p)], ncol = p)
+  n.obs = nrow(test.sp)
+  D2 = getD(n.obs, 2)
+  lamb.max = apply(test.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
+  mean(lamb.max)
+  trend.l1t = l1tf.diff1(test, mean(lamb.max), k=2)
+  trend.hp = hptf(test, (length(test) / 2 / pi)**4 / 2)
+  plot(test, type = 'l', col = 'red', main = paste(test.date[i], '10:00 - 11:00'), ylab = 'log price')
+  lines(trend.l1t, type ='l', col = 'blue')
+  lines(trend.hp, type ='l', col = 'green')
+#  legend('bottomright', legend = c('log price', 'trend'), col = c('black', 'red'))
+}
+
+test = tick1min[test.date[4]]
+test = log(coredata(test) )
+par(mfrow=c(2,2))
+plot(test, type = 'l', col = 'red', main = '1min price')
+
+test.sp = matrix(test[1:(floor(nrow(test)/p)*p)], ncol = p)
+n.obs = nrow(test.sp)
+D2 = getD(n.obs, 2)
+lamb.max = apply(test.sp, 2, function (x) max(abs(solve(D2 %*% t(D2)) %*% D2 %*% x)))
+mean(lamb.max)
+trend.l1t = l1tf.diff1(test, mean(lamb.max), k=2)
+trend.l1sparse = l1tf.sparse(test, mean(lamb.max) * 4, mean(lamb.max), 2)
+plot(trend.l1t, type = 'l', col = 'blue', main = 'L1-T')
+plot(trend.l1sparse, type = 'l', col = 'blue', main = 'L1-sparse')
