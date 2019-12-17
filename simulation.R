@@ -47,9 +47,9 @@ proba.change = rbinom(n.obs, 1, p)
 rnd.walk[1] = b * (runif(1) - 0.5)
 for (i in (2:n.obs)) {
   rnd.walk[i] = ifelse(proba.change[i] == 1, rnd.walk[i - 1], b * (runif(1) - 0.5))
-  signal[i] = signal[i - 1] + rnd.walk[i]
+  signal[i] = signal[i - 1] + rnd.walk[i] + rnorm(1, sd = sigma)
 }
-signal.nz = signal + rnorm(n.obs, sd = sigma)
+signal.nz = signal  # + rnorm(n.obs, sd = sigma)
 
 # trend filtering via l1 filter and hp filter
 lamb.l1 = 5200

@@ -26,21 +26,19 @@ backtest <- function(strategy, start, end, data, rf.rate, w0, transact.cost=1e-3
 
 simple.summary.strat <- function(bt.result) {
   ws = bt.result$weights
+  ws = ws[1:(length(ws) - 1)]
   rk = bt.result$risky
+  rk = as.vector(diff(rk) / rk[1:(length(rk) - 1)])
   rf = bt.result$rf
-  rf = 100 * cumprod(rf + 1)
+  rf = rf[2:(length(rf))]
   
-  wealth = rep(0, length(rk))
+  wealth = rep(0, length(rk) + 1)
   wealth[1] = bt.result$initial.wealth
-  a = floor(ws[1] * wealth[1] / rk[1])
-  b = floor((1 - ws[1]) * wealth[1] / rf[1])
-  for (i in 2:bt.result$num.days) {
-    wealth[i] = wealth[i - 1] + a * (rk[i] - rk[i - 1]) + b * (rf[i] - rf[i - 1])
-    a = floor(ws[i] * wealth[i] / rk[i])
-    b = floor((1 - ws[i]) * wealth[i] / rf[i])
-  }
+  wealth[2:length(wealth)] = 1 + ws * rk + (1 - ws) * rf
+  wealth = cumprod(wealth)
   
   ret = diff(wealth) / wealth[1:(length(wealth) - 1)]
+  ret = ws * rk + (1 - ws) * rf
   cum.ret = sapply(wealth, function (x) x / bt.result$initial.wealth - 1)
   
   ret.mean = mean(ret)
@@ -54,6 +52,7 @@ simple.summary.strat <- function(bt.result) {
   names(stat.vec) <- c('return', 'volatility', 'Sharpe ratio', 'max dd')
   plot(wealth, type = 'l', main = 'wealth')
   plot(ret, type = 'l', main = 'return')
+  plot(ws, type = 'l', main = 'weight')
   print(stat.vec)
   ret.list = list(performance.indicator = stat.vec,
                   daily.return = ret, cumulative.return = cum.ret, wealth = wealth)

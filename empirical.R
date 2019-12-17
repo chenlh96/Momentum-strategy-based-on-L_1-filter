@@ -187,3 +187,6 @@ trend.l1t = l1tf.diff1(test, mean(lamb.max), k=2)
 trend.l1sparse = l1tf.sparse(test, mean(lamb.max) * 4, mean(lamb.max), 2)
 plot(trend.l1t, type = 'l', col = 'blue', main = 'L1-T')
 plot(trend.l1sparse, type = 'l', col = 'blue', main = 'L1-sparse')
+
+trend.sp500 = cv.fit.l1tf(tick1min['/2019-09-25'], tick1min['2019-09-25/'], 420 * 5, 420, 5,15)
+simple.summary.tf(trend.sp500)
